@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sso-demo
+  labels:
+    name: sso-demo

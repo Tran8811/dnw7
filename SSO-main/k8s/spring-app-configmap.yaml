@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spring-app-config
+  namespace: sso-demo
+data:
+  application.yml: |
+    server:
+      port: 8081
+    
+    spring:
+      security:
+        oauth2:
+          client:
+            registration:
+              keycloak:
+                client-id: spring-boot-oidc
+                client-secret: oOb2WhVNBSGxd7cgpq1bxrY3Qlrr1O1L
+                authorization-grant-type: authorization_code
+                redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+                scope:
+                  - openid
+                  - profile
+                  - email
+                provider: keycloak
+            provider:
+              keycloak:
+                issuer-uri: http://keycloak:8080/realms/demo-realm
+
+
+
