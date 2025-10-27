@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: mysql-config
-  namespace: sso-demo
-data:
-  MYSQL_DATABASE: "sso_demo"
-  MYSQL_USER: "appuser"

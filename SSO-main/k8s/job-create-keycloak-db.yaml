@@ -1,0 +1,35 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-keycloak-db
+  namespace: sso-demo
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: create-db
+          image: mysql:8.0
+          env:
+            - name: MYSQL_PWD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-keycloak-secrets
+                  key: MYSQL_ROOT_PASSWORD
+            - name: APP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-keycloak-secrets
+                  key: MYSQL_PASSWORD
+          command: [ "bash", "-c" ]
+          args:
+            - |
+              echo "Waiting for mysql..."
+              for i in {1..30}; do
+                mysql -h mysql -uroot -p"$MYSQL_PWD" -e "select 1" && break || sleep 2
+              done
+              mysql -h mysql -uroot -p"$MYSQL_PWD" -e "CREATE DATABASE IF NOT EXISTS keycloak CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+              mysql -h mysql -uroot -p"$MYSQL_PWD" -e "CREATE USER IF NOT EXISTS 'appuser'@'%' IDENTIFIED BY '${APP_PASS}';"
+              mysql -h mysql -uroot -p"$MYSQL_PWD" -e "GRANT ALL PRIVILEGES ON keycloak.* TO 'appuser'@'%'; FLUSH PRIVILEGES;"
+              echo "DB ready"

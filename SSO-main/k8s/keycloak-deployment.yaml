@@ -15,86 +15,53 @@ spec:
       labels:
         app: keycloak
     spec:
-      initContainers:
-      - name: wait-for-mysql
-        image: busybox:1.35
-        command: ['sh', '-c']
-        args:
-        - |
-          until nc -z mysql 3306; do
-            echo "Waiting for MySQL to be ready..."
-            sleep 2
-          done
-          echo "MySQL is ready!"
       containers:
       - name: keycloak
-        image: quay.io/keycloak/keycloak:latest
-        imagePullPolicy: IfNotPresent
+        image: quay.io/keycloak/keycloak:21.1.1
         args: ["start-dev"]
-        ports:
-        - containerPort: 8080
         env:
-        - name: KEYCLOAK_ADMIN
-          value: "admin"
-        - name: KEYCLOAK_ADMIN_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: keycloak-secret
-              key: keycloak-admin-password
-        - name: KC_DB
-          value: "mysql"
-        - name: KC_DB_URL
-          value: "jdbc:mysql://mysql:3306/keycloak"
-        - name: KC_DB_USERNAME
-          value: "appuser"
-        - name: KC_DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secret
-              key: mysql-password
-        - name: KC_HOSTNAME_STRICT
-          value: "false"
-        - name: KC_HOSTNAME_STRICT_HTTPS
-          value: "false"
-        - name: KC_HTTP_ENABLED
-          value: "true"
-        resources:
-          requests:
-            memory: "1Gi"
-            cpu: "200m"
-          limits:
-            memory: "2Gi"
-            cpu: "1000m"
-        readinessProbe:
-          httpGet:
-            path: /realms/master
-            port: 8080
-          initialDelaySeconds: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 5
+          - name: KEYCLOAK_ADMIN
+            value: admin
+          - name: KEYCLOAK_ADMIN_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-keycloak-secrets
+                key: KEYCLOAK_ADMIN_PASSWORD
+          - name: KC_DB
+            value: mysql
+          - name: KC_DB_URL
+            value: jdbc:mysql://mysql:3306/keycloak
+          - name: KC_DB_USERNAME
+            value: appuser
+          - name: KC_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-keycloak-secrets
+                key: MYSQL_PASSWORD
+          - name: KC_HTTP_ENABLED
+            value: "true"
+        ports:
+          - containerPort: 8080
         livenessProbe:
           httpGet:
-            path: /realms/master
+            path: /health/ready
             port: 8080
-          initialDelaySeconds: 120
+          initialDelaySeconds: 160
           periodSeconds: 30
           timeoutSeconds: 5
-          failureThreshold: 3
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: keycloak
-  namespace: sso-demo
-  labels:
-    app: keycloak
-spec:
-  ports:
-  - port: 8080
-    targetPort: 8080
-  selector:
-    app: keycloak
-
-
-
+          failureThreshold: 6
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 6
+        resources:
+          requests:
+            cpu: 500m
+            memory: 1Gi
+          limits:
+            cpu: 1000m
+            memory: 2Gi

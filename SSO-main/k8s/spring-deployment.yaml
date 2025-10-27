@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-app
+  namespace: sso-demo
+  labels:
+    app: spring-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spring-app
+  template:
+    metadata:
+      labels:
+        app: spring-app
+    spec:
+      containers:
+      - name: spring-app
+        image: YOUR_DOCKER_USERNAME/spring-app:latest   # <-- đổi thành image bạn build
+        ports:
+          - containerPort: 8080
+        env:
+          - name: SPRING_DATASOURCE_URL
+            value: jdbc:mysql://mysql:3306/keycloak
+          - name: SPRING_DATASOURCE_USERNAME
+            value: appuser
+          - name: SPRING_DATASOURCE_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-keycloak-secrets
+                key: MYSQL_PASSWORD
+          - name: KEYCLOAK_AUTH_SERVER_URL
+            value: http://keycloak:8080
+          - name: KEYCLOAK_REALM
+            value: master
+          - name: KEYCLOAK_RESOURCE
+            value: spring-app-client  # nếu chưa config client, bạn có thể dùng default flow
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 3
