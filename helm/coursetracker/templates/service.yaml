@@ -1,0 +1,22 @@
+# Đường dẫn: helm/coursetracker/templates/service.yaml
+
+apiVersion: v1
+kind: Service
+metadata:
+  # Tên Service, ví dụ: "coursetracker-staging-coursetracker"
+  name: {{ .Release.Name }}-{{ .Chart.Name }}
+  labels:
+    # Lấy các nhãn (labels) chung từ file _helpers.tpl
+    {{- include "coursetracker.labels" . | nindent 4 }}
+spec:
+  # Loại service (lấy từ values-*.yaml, ví dụ: ClusterIP)
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.port }}
+      # Trỏ đến port 8080 của container
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    # Gửi traffic đến các Pod có nhãn này
+    {{- include "coursetracker.selectorLabels" . | nindent 4 }}

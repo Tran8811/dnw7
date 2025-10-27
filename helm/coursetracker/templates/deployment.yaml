@@ -1,0 +1,45 @@
+
+# Đường dẫn: helm/coursetracker/templates/deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # Tên Deployment, ví dụ: "coursetracker-staging-coursetracker"
+  name: {{ .Release.Name }}-{{ .Chart.Name }}
+  labels:
+    # Lấy các nhãn (labels) chung từ file _helpers.tpl
+    {{- include "coursetracker.labels" . | nindent 4 }}
+spec:
+  # Số lượng pod (lấy từ values-*.yaml)
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      # Phải khớp với nhãn của Pod
+      {{- include "coursetracker.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        # Gán nhãn cho Pod
+        {{- include "coursetracker.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          # Image và tag (lấy từ values-*.yaml - đây là phần CI/CD sẽ cập nhật)
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              # Port của ứng dụng Spring Boot (8080)
+              containerPort: 8080
+              protocol: TCP
+          
+          # Kiểm tra health check (quan trọng)
+          # Pipeline của bạn có actuator
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: http
