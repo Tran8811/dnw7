@@ -27,7 +27,7 @@ jobs:
       # Bước 3: Cấp quyền thực thi cho Maven wrapper (mvnw)
       # File này nằm trong SSO-main/demo1/
       - name: Grant execute permission for mvnw
-        run: chmod +x demo1/mvnw
+        run: chmod +x SSO-main/demo1/mvnw
 
       # Bước 4: Build ứng dụng Spring Boot bằng Maven wrapper
       # Chạy lệnh build từ thư mục gốc, chỉ định file pom.xml trong demo1

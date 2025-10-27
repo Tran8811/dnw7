@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  # Tên ứng dụng trong ArgoCD UI
+  name: sso-demo-app
+  # Namespace nơi ArgoCD đang chạy
+  namespace: argocd
+spec:
+  # Project ArgoCD (thường là 'default')
+  project: default
+
+  # Nguồn chứa manifest Kubernetes
+  source:
+    # *** THAY THẾ BẰNG URL REPOSITORY GITHUB CỦA BẠN ***
+    https://github.com/Tran8811/dnw7
+    # Nhánh cần theo dõi (HEAD là nhánh mặc định, thường là main)
+    targetRevision: HEAD
+    # Đường dẫn đến thư mục chứa manifest Kubernetes trong repo
+    path: SSO-main/k8s
+
+  # Đích triển khai
+  destination:
+    # Địa chỉ API server của cluster Kubernetes (thường là mặc định này)
+    server: https://kubernetes.default.svc
+    # Namespace trên Kubernetes để triển khai ứng dụng
+    namespace: sso-demo # Namespace này sẽ được tạo nếu chưa có (do syncOptions)
+
+  # Chính sách đồng bộ hóa
+  syncPolicy:
+    automated:
+      # Tự động xóa resource không còn tồn tại trong Git
+      prune: true
+      # Tự động sửa lỗi nếu trạng thái cluster khác Git
+      selfHeal: true
+    syncOptions:
+      # Tự động tạo namespace 'sso-demo' nếu chưa tồn tại
+      - CreateNamespace=true
