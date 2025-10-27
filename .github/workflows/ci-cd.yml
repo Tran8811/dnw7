@@ -1,5 +1,5 @@
 # Đường dẫn: .github/workflows/ci-cd.yml
-# (Nằm trong repo tran8811/dnw7)
+# (Nằm trong repo tran81/dnw7)
 
 name: CI/CD Pipeline
 
