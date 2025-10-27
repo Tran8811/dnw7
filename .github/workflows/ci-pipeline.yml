@@ -56,4 +56,4 @@ jobs:
           tags: | # Danh sách các tag cho image
             punpun11/spring-boot-sso-demo:latest
             punpun11/spring-boot-sso-demo:${{ github.sha }}
-          # *** THAY THẾ 'your-registry-username' BẰNG USERNAME REGISTRY CỦA BẠN ***
+          # *** THAY THẾ 'your-registry-username' BẰNG USERNAME REGISTRY CỦA  ***
