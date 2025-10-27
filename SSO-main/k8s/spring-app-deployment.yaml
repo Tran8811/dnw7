@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: spring-app
-        image: spring-boot-sso-demo:latest
+        image: punpun11/spring-boot-sso-demo:latest
         ports:
         - containerPort: 8081
         env:
