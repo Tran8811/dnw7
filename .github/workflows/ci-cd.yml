@@ -19,6 +19,9 @@ jobs:
 
   test:
     runs-on: ubuntu-latest
+    permissions:      # <--- THÊM KHỐI NÀY
+      contents: read    # Quyền để checkout code
+      checks: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
