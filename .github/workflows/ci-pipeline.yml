@@ -52,7 +52,7 @@ jobs:
         with:
           context: ./SSO-main/demo1 # Đường dẫn tới thư mục chứa Dockerfile (SSO-main/demo1/)
           file: ./SSO-main/demo1/Dockerfile # Đường dẫn tới file Dockerfile
-          push: true # Đẩy image sau khi build thành công
+          push: true # Đẩy image sau khi build thành côn
           tags: | # Danh sách các tag cho image
             punpun11/spring-boot-sso-demo:latest
             punpun11/spring-boot-sso-demo:${{ github.sha }}
