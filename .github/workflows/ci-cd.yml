@@ -176,11 +176,11 @@ jobs:
         # Thêm [skip ci] để tránh lặp vô tận pipeline
         git commit -am "Update production image to ${{ github.sha }} [skip ci]"
         git push
-
   notify:
     needs: [update-config-staging, update-config-production]
     runs-on: ubuntu-latest
     if: always()
+
     steps:
     - name: Notify deployment status
       uses: 8398a7/action-slack@v3
@@ -188,6 +188,7 @@ jobs:
       with:
         status: ${{ job.status }}
         channel: '#deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+        # DÒNG 'webhook_url' ĐÃ BỊ XÓA KHỎI ĐÂY
       env:
+        # Dòng này là ĐÚNG và cần giữ lại
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
