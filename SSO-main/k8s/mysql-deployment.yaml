@@ -18,6 +18,7 @@ spec:
       containers:
       - name: mysql
         image: mysql:8.0
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3306
         env:
@@ -46,11 +47,33 @@ spec:
           mountPath: /var/lib/mysql
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        readinessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        livenessProbe:
+          exec:
+            command:
+            - mysqladmin
+            - ping
+            - -h
+            - localhost
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
       volumes:
       - name: mysql-storage
         persistentVolumeClaim:

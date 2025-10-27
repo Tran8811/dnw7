@@ -15,9 +15,21 @@ spec:
       labels:
         app: spring-app
     spec:
+      initContainers:
+      - name: wait-for-keycloak
+        image: busybox:1.35
+        command: ['sh', '-c']
+        args:
+        - |
+          until nc -z keycloak 8080; do
+            echo "Waiting for Keycloak to be ready..."
+            sleep 2
+          done
+          echo "Keycloak is ready!"
       containers:
       - name: spring-app
         image: punpun11/spring-boot-sso-demo:latest
+        imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 8081
         env:
@@ -25,23 +37,27 @@ spec:
           value: "k8s"
         resources:
           requests:
-            memory: "256Mi"
-            cpu: "100m"
-          limits:
             memory: "512Mi"
-            cpu: "500m"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
         readinessProbe:
           httpGet:
             path: /actuator/health
             port: 8081
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 5
         livenessProbe:
           httpGet:
             path: /actuator/health
             port: 8081
-          initialDelaySeconds: 60
+          initialDelaySeconds: 120
           periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
         volumeMounts:
         - name: config-volume
           mountPath: /app/config
