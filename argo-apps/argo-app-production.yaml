@@ -1,0 +1,35 @@
+# Đường dẫn: argo-apps/argo-app-production.yaml
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: coursetracker-production
+  namespace: argocd
+spec:
+  project: default
+  
+  source:
+    # SỬA: Trỏ đến URL của mono-repo
+    repoURL: 'https://github.com/tran8811/dnw7.git'
+    
+    # SỬA: ArgoCD sẽ theo dõi nhánh 'main' cho Production
+    targetRevision: main
+    
+    # Đường dẫn đến Helm chart trong repo
+    path: helm/coursetracker
+    
+    # Chỉ định file values sẽ sử dụng
+    helm:
+      valueFiles:
+      - values-production.yaml
+      
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: production # Namespace muốn deploy
+    
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true # Tự động tạo namespace 'production'

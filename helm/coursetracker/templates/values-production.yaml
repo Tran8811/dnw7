@@ -1,0 +1,14 @@
+
+replicaCount: 3 
+
+image:
+
+  repository: ghcr.io/tran8811/dnw7
+  pullPolicy: IfNotPresent
+
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8080
+

@@ -1,0 +1,35 @@
+# Đường dẫn: argo-apps/argo-app-staging.yaml
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: coursetracker-staging
+  namespace: argocd
+spec:
+  project: default
+  
+  source:
+    # SỬA: Trỏ đến URL của mono-repo
+    repoURL: 'https://github.com/tran8811/dnw7.git'
+    
+    # SỬA: ArgoCD sẽ theo dõi nhánh 'develop' cho Staging
+    targetRevision: develop
+    
+    # Đường dẫn đến Helm chart trong repo
+    path: helm/coursetracker
+    
+    # Chỉ định file values sẽ sử dụng
+    helm:
+      valueFiles:
+      - values-staging.yaml
+      
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: staging # Namespace muốn deploy
+    
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true # Tự động tạo namespace 'staging'
