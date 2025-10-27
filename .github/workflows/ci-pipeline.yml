@@ -33,7 +33,7 @@ jobs:
       # Chạy lệnh build từ thư mục gốc, chỉ định file pom.xml trong demo1
       # -DskipTests để bỏ qua việc chạy test (có thể bỏ đi nếu muốn chạy test)
       - name: Build with Maven
-        run: ./demo1/mvnw -f demo1/pom.xml clean package -DskipTests
+        run: .SSO-main/demo1/mvnw -f SSO-main/demo1/pom.xml clean package -DskipTests
 
       # Bước 5: Thiết lập Docker Buildx (cần thiết cho các action Docker)
       - name: Set up Docker Buildx
@@ -44,15 +44,15 @@ jobs:
       - name: Login to Docker Hub # Thay 'Docker Hub' nếu dùng registry khác (e.g., GHCR)
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }} # Tên đăng nhập registry
+          username: ${{ secrets.DOCKERHUB_ }} # Tên đăng nhập registry
           password: ${{ secrets.DOCKERHUB_TOKEN }}    # Access Token hoặc mật khẩu registry
 
       # Bước 7: Build và đẩy Docker image lên registry
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          context: ./demo1 # Đường dẫn tới thư mục chứa Dockerfile (SSO-main/demo1/)
-          file: ./demo1/Dockerfile # Đường dẫn tới file Dockerfile
+          context: .SSO-main/demo1 # Đường dẫn tới thư mục chứa Dockerfile (SSO-main/demo1/)
+          file: .SSO-main/demo1/Dockerfile # Đường dẫn tới file Dockerfile
           push: true # Đẩy image sau khi build thành công
           tags: | # Danh sách các tag cho image
             punpun11/spring-boot-sso-demo:latest
