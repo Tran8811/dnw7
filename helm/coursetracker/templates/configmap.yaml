@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "coursetracker.fullname" . }}-config
+  labels:
+    {{- include "coursetracker.labels" . | nindent 4 }}
+data:
+  SPRING_DATASOURCE_URL: {{ .Values.configMap.database.url | quote }}
+  SPRING_DATASOURCE_USERNAME: {{ .Values.configMap.database.username | quote }}
+  SPRING_DATASOURCE_PASSWORD: {{ .Values.configMap.database.password | quote }}
+  SPRING_JPA_HIBERNATE_DDL_AUTO: {{ .Values.configMap.hibernate.ddlAuto | quote }}
+  SPRING_H2_CONSOLE_ENABLED: {{ .Values.configMap.h2.consoleEnabled | quote }}
+  SPRING_H2_CONSOLE_PATH: {{ .Values.configMap.h2.consolePath | quote }}

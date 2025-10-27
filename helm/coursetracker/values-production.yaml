@@ -1,0 +1,58 @@
+# Production environment values
+replicaCount: 3
+
+image:
+  repository: ghcr.io/your-username/coursetracker
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+  hosts:
+    - host: coursetracker.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: coursetracker-tls
+      hosts:
+        - coursetracker.yourdomain.com
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+  requests:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+  targetMemoryUtilizationPercentage: 80
+
+configMap:
+  database:
+    url: "jdbc:mysql://mysql-service:3306/coursetracker"
+    username: "coursetracker"
+    password: "secure_password"
+  hibernate:
+    ddlAuto: "validate"
+  h2:
+    consoleEnabled: "false"
+    consolePath: "/h2-console"
+
+persistence:
+  enabled: true
+  storageClass: "fast-ssd"
+  accessMode: ReadWriteOnce
+  size: 10Gi

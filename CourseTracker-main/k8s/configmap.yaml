@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: coursetracker-config
+data:
+  database.url: "jdbc:h2:mem:testdb"
+  database.username: "sa"
+  database.password: ""
+  hibernate.ddl-auto: "update"
+  h2.console.enabled: "true"
+  h2.console.path: "/h2-console"
