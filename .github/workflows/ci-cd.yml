@@ -1,5 +1,9 @@
 name: CI/CD Pipeline
 
+permissions:
+  contents: write
+  packages: write
+
 on:
   push:
     branches: [ main, develop ]
@@ -8,84 +12,60 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: tran8811/dnw7 # ép lowercase để tránh lỗi Trivy
+  IMAGE_NAME: tran8811/dnw7
 
 jobs:
 
-  # ---------------- TEST ---------------- #
   test:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
       checks: write
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
       with:
         java-version: '21'
         distribution: 'temurin'
-    - name: Cache Gradle packages
-      uses: actions/cache@v3
+    - uses: actions/cache@v3
       with:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
         restore-keys: ${{ runner.os }}-gradle-
-    - name: Make gradlew executable
-      run: chmod +x CourseTracker-main/demo1/gradlew
-    - name: Run tests
-      run: |
-        cd CourseTracker-main/demo1
-        ./gradlew test
-    - name: Generate test report
-      uses: dorny/test-reporter@v1
+    - run: chmod +x CourseTracker-main/demo1/gradlew
+    - run: cd CourseTracker-main/demo1 && ./gradlew test
+    - uses: dorny/test-reporter@v1
       if: success() || failure()
       with:
         name: Gradle Tests
         path: CourseTracker-main/demo1/build/test-results/test/TEST-*.xml
         reporter: java-junit
 
-
-  # ---------------- BUILD & PUSH ---------------- #
   build-and-push:
     needs: test
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      packages: write
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-java@v4
       with:
         java-version: '21'
         distribution: 'temurin'
-    - name: Cache Gradle packages
-      uses: actions/cache@v3
+    - uses: actions/cache@v3
       with:
         path: |
           ~/.gradle/caches
           ~/.gradle/wrapper
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
         restore-keys: ${{ runner.os }}-gradle-
-    - name: Make gradlew executable
-      run: chmod +x CourseTracker-main/demo1/gradlew
-    - name: Build application
-      run: |
-        cd CourseTracker-main/demo1
-        ./gradlew build -x test
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
+    - run: chmod +x CourseTracker-main/demo1/gradlew
+    - run: cd CourseTracker-main/demo1 && ./gradlew build -x test
+    - uses: docker/login-action@v3
       with:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Extract metadata (tags)
-      id: meta
+    - id: meta
       uses: docker/metadata-action@v5
       with:
         images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
@@ -94,65 +74,46 @@ jobs:
           type=ref,event=pr
           type=sha,prefix={{branch}}-
           type=raw,value=latest,enable={{is_default_branch}}
-          type=sha,prefix=,suffix=
-    - name: Build and push Docker image
-      uses: docker/build-push-action@v5
+          type=sha
+    - uses: docker/build-push-action@v5
       with:
         context: ./CourseTracker-main/demo1
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
 
-
-
-
-
-  # ---------------- UPDATE STAGING ---------------- #
   update-config-staging:
-    needs: [build-and-push]
+    needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Update image tag for staging
-      run: |
+    - uses: actions/checkout@v4
+    - run: |
         sed -i "s|tag: .*|tag: ${{ github.sha }}|g" helm/coursetracker/values-staging.yaml
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git commit -am "Update staging image to ${{ github.sha }} [skip ci]"
+        git commit -am "Update staging image to ${{ github.sha }} [skip ci]" || echo "No changes"
         git push
 
-
-  # ---------------- UPDATE PRODUCTION ---------------- #
   update-config-production:
-    needs: [build-and-push]
+    needs: build-and-push
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-    - name: Update image tag for production
-      run: |
+    - uses: actions/checkout@v4
+    - run: |
         sed -i "s|tag: .*|tag: ${{ github.sha }}|g" helm/coursetracker/values-production.yaml
         git config user.name "GitHub Actions Bot"
         git config user.email "actions@github.com"
-        git commit -am "Update production image to ${{ github.sha }} [skip ci]"
+        git commit -am "Update production image to ${{ github.sha }} [skip ci]" || echo "No changes"
         git push
 
-
-  # ---------------- NOTIFY ---------------- #
   notify:
-    needs: [build-and-push]
+    needs: build-and-push
     runs-on: ubuntu-latest
     if: always()
     steps:
-    - name: Notify deployment status
-      uses: 8398a7/action-slack@v3
+    - uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
         channel: '#deployments'
