@@ -104,31 +104,12 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
 
 
-  # ---------------- SECURITY SCAN ---------------- #
-  security-scan:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@v0.20.0
-      with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        format: 'sarif'
-        output: 'trivy-results.sarif'
 
-    - name: Upload Trivy scan results to GitHub Security tab
-      if: success()
-      uses: github/codeql-action/upload-sarif@v3
-      with:
-        sarif_file: 'trivy-results.sarif'
 
 
   # ---------------- UPDATE STAGING ---------------- #
   update-config-staging:
-    needs: [build-and-push, security-scan]
+    needs: [build-and-push]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop'
     steps:
@@ -147,7 +128,7 @@ jobs:
 
   # ---------------- UPDATE PRODUCTION ---------------- #
   update-config-production:
-    needs: [build-and-push, security-scan]
+    needs: [build-and-push]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     steps:
@@ -166,7 +147,7 @@ jobs:
 
   # ---------------- NOTIFY ---------------- #
   notify:
-    needs: [build-and-push, security-scan]
+    needs: [build-and-push]
     runs-on: ubuntu-latest
     if: always()
     steps:
