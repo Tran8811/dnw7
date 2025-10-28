@@ -108,88 +108,24 @@ jobs:
         labels: ${{ steps.meta.outputs.labels }}
 
   security-scan:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-        format: 'sarif'
-        output: 'trivy-results.sarif'
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v3
-      if: always()
-      with:
-        sarif_file: 'trivy-results.sarif'
+   needs: build-and-push
+  runs-on: ubuntu-latest
+  permissions:
+    contents: read
+    security-events: write
+  steps:
+   - name: Checkout code
+    uses: actions/checkout@v4
 
-  # --- PHẦN DEPLOY ĐÃ SỬA CHO MONO-REPO ---
-  
-  update-config-staging:
-    needs: [build-and-push, security-scan]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/develop' # Kích hoạt khi push lên 'develop'
+   - name: Run Trivy vulnerability scanner
+    uses: aquasecurity/trivy-action@master
+    with:
+      image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+      format: 'sarif'
+      output: 'trivy-results.sarif'
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        # Cần token để push commit trở lại repo
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Update image tag for staging
-      run: |
-        # Sửa file values-staging.yaml ngay trong repo này
-        sed -i "s|tag: .*|tag: ${{ github.sha }}|g" helm/coursetracker/values-staging.yaml
-        
-        # Commit và push
-        git config user.name "GitHub Actions Bot"
-        git config user.email "actions@github.com"
-        # Thêm [skip ci] để tránh lặp vô tận pipeline
-        git commit -am "Update staging image to ${{ github.sha }} [skip ci]"
-        git push
-
-  update-config-production:
-    needs: [build-and-push, security-scan]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # Kích hoạt khi push lên 'main'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        # Cần token để push commit trở lại repo
-        token: ${{ secrets.GITHUB_TOKEN }}
-
-    - name: Update image tag for production
-      run: |
-        # Sửa file values-production.yaml ngay trong repo này
-        sed -i "s|tag: .*|tag: ${{ github.sha }}|g" helm/coursetracker/values-production.yaml
-        
-        # Commit và push
-        git config user.name "GitHub Actions Bot"
-        git config user.email "actions@github.com"
-        # Thêm [skip ci] để tránh lặp vô tận pipeline
-        git commit -am "Update production image to ${{ github.sha }} [skip ci]"
-        git push
-  notify:
-    needs: [update-config-staging, update-config-production]
-    runs-on: ubuntu-latest
-    if: always()
-
-    steps:
-    - name: Notify deployment status
-      uses: 8398a7/action-slack@v3
-      if: always()
-      with:
-        status: ${{ job.status }}
-        channel: '#deployments'
-        # DÒNG 'webhook_url' ĐÃ BỊ XÓA KHỎI ĐÂY
-      env:
-        # Dòng này là ĐÚNG và cần giữ lại
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+   - name: Upload Trivy scan results to GitHub Security tab
+    uses: github/codeql-action/upload-sarif@v3
+    if: success()
+    with:
+      sarif_file: 'trivy-results.sarif'
