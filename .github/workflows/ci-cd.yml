@@ -1,6 +1,3 @@
-# Đường dẫn: .github/workflows/ci-cd.yml
-# (Nằm trong repo tran81/dnw7)
-
 name: CI/CD Pipeline
 
 on:
@@ -11,16 +8,15 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }} # tran8811/dnw7
+  IMAGE_NAME: tran8811/dnw7 # ép lowercase để tránh lỗi Trivy
 
 jobs:
-  # --- CÁC JOB test, build-and-push, security-scan GIỮ NGUYÊN ---
-  # (Tôi sẽ rút gọn các job này, chỉ giữ lại phần deploy đã sửa)
 
+  # ---------------- TEST ---------------- #
   test:
     runs-on: ubuntu-latest
-    permissions:      # <--- THÊM KHỐI NÀY
-      contents: read    # Quyền để checkout code
+    permissions:
+      contents: read
       checks: write
     steps:
     - name: Checkout code
@@ -37,8 +33,7 @@ jobs:
           ~/.gradle/caches
           ~/.gradle/wrapper
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+        restore-keys: ${{ runner.os }}-gradle-
     - name: Make gradlew executable
       run: chmod +x CourseTracker-main/demo1/gradlew
     - name: Run tests
@@ -53,6 +48,8 @@ jobs:
         path: CourseTracker-main/demo1/build/test-results/test/TEST-*.xml
         reporter: java-junit
 
+
+  # ---------------- BUILD & PUSH ---------------- #
   build-and-push:
     needs: test
     runs-on: ubuntu-latest
@@ -74,8 +71,7 @@ jobs:
           ~/.gradle/caches
           ~/.gradle/wrapper
         key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
+        restore-keys: ${{ runner.os }}-gradle-
     - name: Make gradlew executable
       run: chmod +x CourseTracker-main/demo1/gradlew
     - name: Build application
@@ -88,7 +84,7 @@ jobs:
         registry: ${{ env.REGISTRY }}
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
-    - name: Extract metadata
+    - name: Extract metadata (tags)
       id: meta
       uses: docker/metadata-action@v5
       with:
@@ -107,25 +103,77 @@ jobs:
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
 
+
+  # ---------------- SECURITY SCAN ---------------- #
   security-scan:
-   needs: build-and-push
-  runs-on: ubuntu-latest
-  permissions:
-    contents: read
-    security-events: write
-  steps:
-   - name: Checkout code
-    uses: actions/checkout@v4
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@v0.24.0
+      with:
+        image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-results.sarif'
 
-   - name: Run Trivy vulnerability scanner
-    uses: aquasecurity/trivy-action@master
-    with:
-      image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
-      format: 'sarif'
-      output: 'trivy-results.sarif'
+    - name: Upload Trivy scan results to GitHub Security tab
+      if: success()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: 'trivy-results.sarif'
 
-   - name: Upload Trivy scan results to GitHub Security tab
-    uses: github/codeql-action/upload-sarif@v3
-    if: success()
-    with:
-      sarif_file: 'trivy-results.sarif'
+
+  # ---------------- UPDATE STAGING ---------------- #
+  update-config-staging:
+    needs: [build-and-push, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Update image tag for staging
+      run: |
+        sed -i "s|tag: .*|tag: ${{ github.sha }}|g" helm/coursetracker/values-staging.yaml
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git commit -am "Update staging image to ${{ github.sha }} [skip ci]"
+        git push
+
+
+  # ---------------- UPDATE PRODUCTION ---------------- #
+  update-config-production:
+    needs: [build-and-push, security-scan]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+    - name: Update image tag for production
+      run: |
+        sed -i "s|tag: .*|tag: ${{ github.sha }}|g" helm/coursetracker/values-production.yaml
+        git config user.name "GitHub Actions Bot"
+        git config user.email "actions@github.com"
+        git commit -am "Update production image to ${{ github.sha }} [skip ci]"
+        git push
+
+
+  # ---------------- NOTIFY ---------------- #
+  notify:
+    needs: [build-and-push, security-scan]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+    - name: Notify deployment status
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
