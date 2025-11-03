@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  # Tên của ServiceMonitor
+  name: {{ .Release.Name }}-{{ .Chart.Name }}
+  # Quan trọng: Cần có nhãn này để Prometheus tìm thấy
+  labels:
+    {{- include "coursetracker.labels" . | nindent 4 }}
+spec:
+  # Bộ chọn (selector) này phải khớp với nhãn (labels) trên file service.yaml
+  selector:
+    matchLabels:
+      {{- include "coursetracker.selectorLabels" . | nindent 6 }}
+  endpoints:
+  - port: http
+    # Đường dẫn mà bạn đã mở (expose) trong application.properties
+    path: /actuator/prometheus
+    # Tần suất cào (scrape) dữ liệu
+    interval: 15s
