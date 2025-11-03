@@ -18,6 +18,10 @@ spec:
       {{- include "coursetracker.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+     annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/actuator/prometheus"               
+        prometheus.io/port: "8080"
       labels:
         # Gán nhãn cho Pod
         {{- include "coursetracker.selectorLabels" . | nindent 8 }}
