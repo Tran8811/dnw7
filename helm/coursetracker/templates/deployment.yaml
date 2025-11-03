@@ -26,6 +26,8 @@ spec:
         # Gán nhãn cho Pod
         {{- include "coursetracker.selectorLabels" . | nindent 8 }}
     spec:
+      imagePullSecrets:
+        - name: ghcr-creds
       containers:
         - name: {{ .Chart.Name }}
           # Image và tag (lấy từ values-*.yaml - đây là phần CI/CD sẽ cập nhật)
