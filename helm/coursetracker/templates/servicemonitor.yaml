@@ -1,10 +1,15 @@
+# Đường dẫn: helm/coursetracker/templates/servicemonitor.yaml
+
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  # Tên của ServiceMonitor
   name: {{ .Release.Name }}-{{ .Chart.Name }}
-  # Quan trọng: Cần có nhãn này để Prometheus tìm thấy
   labels:
+    # === BẠN CẦN THÊM DÒNG NÀY VÀO ===
+    release: prometheus
+    # === HẾT PHẦN THÊM VÀO ===
+
+    # Các nhãn này được lấy từ _helpers.tpl
     {{- include "coursetracker.labels" . | nindent 4 }}
 spec:
   # Bộ chọn (selector) này phải khớp với nhãn (labels) trên file service.yaml
@@ -13,7 +18,5 @@ spec:
       {{- include "coursetracker.selectorLabels" . | nindent 6 }}
   endpoints:
   - port: http
-    # Đường dẫn mà bạn đã mở (expose) trong application.properties
     path: /actuator/prometheus
-    # Tần suất cào (scrape) dữ liệu
     interval: 15s
