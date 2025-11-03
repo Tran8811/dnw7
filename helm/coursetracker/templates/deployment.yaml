@@ -22,7 +22,7 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/path: "/actuator/prometheus"               
         prometheus.io/port: "8080"
-      labels:
+     labels:
         # Gán nhãn cho Pod
         {{- include "coursetracker.selectorLabels" . | nindent 8 }}
     spec:
