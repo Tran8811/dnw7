@@ -6,7 +6,7 @@ image:
   repository: ghcr.io/tran8811/dnw7
   pullPolicy: IfNotPresent
 
-  tag: 2e49cd389c0ae740b0f6fb92e716543f371c1e91
+  tag: 83009d556f5b6e4d5521d4f4c580a6c75f355966
 
 service:
   type: ClusterIP
